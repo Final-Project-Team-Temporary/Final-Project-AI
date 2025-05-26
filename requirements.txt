@@ -2,4 +2,5 @@ langchain==0.3.25
 langchain-community==0.3.24                                            
 langchain-core==0.3.61                                                 
 langchain-ollama==0.3.3
-langserve[all]
+langserve[all]==0.0.51
+
