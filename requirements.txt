@@ -1,6 +1,8 @@
-langchain==0.3.25                                                      
-langchain-community==0.3.24                                            
-langchain-core==0.3.61                                                 
+langchain==0.3.25
+langchain-community==0.3.24
+langchain-core==0.3.61
 langchain-ollama==0.3.3
-langserve[all]==0.0.51
-
+fastapi==0.110.2
+uvicorn==0.29.0
+pydantic==2.10.4
+ollama==0.4.8
