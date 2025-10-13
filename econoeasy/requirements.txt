@@ -9,7 +9,7 @@ langchain-core==0.3.61
 langchain-google-genai>=0.1.0
 google-generativeai>=0.7.0
 
-# YouTube API 
+# YouTube API (선택사항)
 google-api-python-client==2.108.0
 
 # 환경 변수 관리
