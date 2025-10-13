@@ -1,0 +1,33 @@
+# Git 관련
+.git
+.gitignore
+
+# Python 관련
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# 환경 변수 파일
+.env
+.env.local
+
+# IDE 관련
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 기타
+README.md
+*.md
+.DS_Store
+Thumbs.db
+
+# 추천 기능 관련 (현재 배포하지 않음)
+econoeasy/app/routers/recommend.py
+econoeasy/app/services/recommender/
