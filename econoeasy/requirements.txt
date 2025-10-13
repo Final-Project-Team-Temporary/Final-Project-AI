@@ -12,5 +12,9 @@ google-generativeai>=0.7.0
 # YouTube API (선택사항)
 google-api-python-client==2.108.0
 
-# 개발용 (선택사항)
+# 환경 변수 관리
+python-dotenv==1.0.0
+pydantic-settings==2.6.1
+
+# 개발용 
 python-multipart==0.0.6
