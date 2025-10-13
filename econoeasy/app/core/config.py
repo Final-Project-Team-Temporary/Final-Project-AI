@@ -2,9 +2,10 @@ import os
 from typing import Optional
 
 class Settings:
+    """애플리케이션 설정"""
     
     # API 키 설정
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "AIzaSyA_N_f8KmzGpRuptN8HRdYpR22D7V62E8o")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "AIzaSyASBqvSr2chx82bMen9r9Fqdd6yKd5L7sY")
     YOUTUBE_API_KEY: Optional[str] = os.getenv("YOUTUBE_API_KEY")
     
     # 서버 설정
@@ -17,7 +18,7 @@ class Settings:
     API_VERSION: str = "1.0.0"
     
     # Gemini 설정
-    GEMINI_MODEL: str = "gemini-2.5-flash"  # 최신 안정 버전
+    GEMINI_MODEL: str = "gemini-1.5-flash"
     GEMINI_TEMPERATURE: float = 0.0
     
     # YouTube 설정
