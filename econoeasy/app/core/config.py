@@ -34,7 +34,22 @@ class Settings(BaseSettings):
     # YouTube 설정
     YOUTUBE_MAX_RESULTS: int = 10
     YOUTUBE_DEFAULT_TOP_N: int = 3
-    
+
+    # MongoDB 설정
+    MONGO_URI: str
+    MONGO_AUTHENTICATION_DATABASE: str = "admin"
+    MONGO_DATABASE: str = "econoeasy"
+
+    # Redis 설정
+    REDIS_HOST: str
+    REDIS_PORT: int = 6379
+    REDIS_USE_TLS: bool = True
+    REDIS_SSL_CERT_REQS: str = "required"
+    REDIS_STREAM_KEY: str = "article-stream"
+    REDIS_DEDUP_KEY: str = "processed-articles"
+    REDIS_CONSUMER_GROUP: str = "article-processors"
+    REDIS_CONSUMER_NAME: str = "worker-1"
+
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),
         env_file_encoding="utf-8",
