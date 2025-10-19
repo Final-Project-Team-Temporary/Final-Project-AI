@@ -1,5 +1,40 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+from datetime import datetime
+from enum import Enum
+
+# Enum 타입 정의
+class SummaryLevel(str, Enum):
+    """요약 난이도 레벨"""
+    EASY = "EASY"
+    MEDIUM = "MEDIUM"
+    ADVANCED = "ADVANCED"
+
+class Category(str, Enum):
+    """기사 카테고리"""
+    ECONOMY = "ECONOMY"
+    FINANCE = "FINANCE"
+    BUSINESS = "BUSINESS"
+    TECHNOLOGY = "TECHNOLOGY"
+    GENERAL = "GENERAL"
+
+# MongoDB 관련 스키마
+class ArticleDocument(BaseModel):
+    """MongoDB에 저장된 기사 문서 스키마"""
+    id: Optional[str] = Field(None, alias="_id")
+    title: str
+    content: str
+    publishedAt: str
+    url: str
+    summary_status: str = "BEFORE_ENQUEUED"
+
+    class Config:
+        populate_by_name = True
+
+class RedisStreamMessage(BaseModel):
+    """Redis Stream 메시지 스키마"""
+    articleId: str
+    timestamp: str
 
 # 요약 관련 스키마
 class ArticleInput(BaseModel):
@@ -12,6 +47,21 @@ class SummaryOutput(BaseModel):
     easy: str
     medium: str
     advanced: str
+
+class SummarizedArticle(BaseModel):
+    """MongoDB summarized_articles 컬렉션 스키마"""
+    id: Optional[str] = Field(None, alias="_id")
+    originalArticleId: str
+    title: str
+    category: Category = Category.GENERAL
+    summarizedContent: str
+    summaryLevel: SummaryLevel
+    summarizedAt: datetime
+    publishedAt: Optional[str] = None
+
+    class Config:
+        populate_by_name = True
+        use_enum_values = True
 
 # YouTube 추천 관련 스키마
 class RecommendationRequest(BaseModel):
