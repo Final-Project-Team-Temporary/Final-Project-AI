@@ -28,6 +28,3 @@ README.md
 .DS_Store
 Thumbs.db
 
-# 추천 기능 관련 (현재 배포하지 않음)
-econoeasy/app/routers/recommend.py
-econoeasy/app/services/recommender/
