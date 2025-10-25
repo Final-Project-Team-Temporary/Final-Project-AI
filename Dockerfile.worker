@@ -18,8 +18,6 @@ WORKDIR /app/econoeasy
 # 의존성 설치
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 포트 노출
-EXPOSE 8000
+# 워커 실행
+CMD ["python", "-m", "app.services.queue.worker"]
 
-# 애플리케이션 실행
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

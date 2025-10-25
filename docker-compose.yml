@@ -1,8 +1,27 @@
 version: '3.8'
 
 services:
+  # MongoDB (내장)
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  # Redis (내장)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # FastAPI 서버
   econoeasy-api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -10,4 +29,30 @@ services:
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
       - HOST=0.0.0.0
       - PORT=8000
+      - MONGO_URI=mongodb://mongodb:27017
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_USE_TLS=false
+    depends_on:
+      - mongodb
+      - redis
     restart: unless-stopped
+
+  # 백그라운드 워커 (요약 수행 + MongoDB 저장)
+  econoeasy-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MONGO_URI=mongodb://mongodb:27017
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_USE_TLS=false
+    depends_on:
+      - mongodb
+      - redis
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
