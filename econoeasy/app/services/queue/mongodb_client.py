@@ -104,13 +104,13 @@ class MongoDBClient:
                 object_id = ObjectId(article_id)
                 result = await self.articles_collection.update_one(
                     {"_id": object_id},
-                    {"$set": {"summary_status": status}}
+                    {"$set": {"summaryStatus": status}}
                 )
             except Exception:
                 # ObjectId 변환 실패 시 문자열로 업데이트
                 result = await self.articles_collection.update_one(
                     {"_id": article_id},
-                    {"$set": {"summary_status": status}}
+                    {"$set": {"summaryStatus": status}}
                 )
 
             if result.modified_count > 0:
