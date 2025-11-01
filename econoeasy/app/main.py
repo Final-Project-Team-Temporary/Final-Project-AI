@@ -30,6 +30,7 @@ async def health_check():
         "version": settings.API_VERSION
     }
 
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
