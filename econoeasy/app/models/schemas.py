@@ -84,8 +84,11 @@ class VideoRecommendation(BaseModel):
     channel: str
     recommendation_score: float
     quality_score: float
-    sentiment_score: float
     relevance_score: float
+    educational_value: float
+    content_accuracy: float
+    analysis_summary: str
+    trust_comment: str
     metrics: VideoMetrics
 
 class RecommendationResponse(BaseModel):
