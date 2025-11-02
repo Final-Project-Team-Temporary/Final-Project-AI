@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from .core.config import settings
 from .routers import summarize, recommend
+from .routers import quiz
 
 # FastAPI 앱 생성
 app = FastAPI(
@@ -15,6 +16,7 @@ app = FastAPI(
 # 라우터 등록
 app.include_router(summarize.router)
 app.include_router(recommend.router)
+app.include_router(quiz.router)
 
 @app.get("/")
 async def root():

@@ -5,7 +5,6 @@ import re
 from typing import Dict, Any
 from ...models.schemas import SummaryOutput
 
-
 class ResponseParser:
     
     @staticmethod
@@ -40,3 +39,5 @@ class ResponseParser:
             medium=content[:200] + "..." if len(content) > 200 else content,
             advanced=content[:300] + "..." if len(content) > 300 else content
         )
+
+    # 퀴즈 파싱은 services/quiz/parser.py로 이동

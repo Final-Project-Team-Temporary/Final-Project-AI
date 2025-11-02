@@ -102,3 +102,51 @@ class ErrorResponse(BaseModel):
     """에러 응답 스키마"""
     error: str
     detail: Optional[str] = None
+
+############################
+# Quiz 관련 스키마 추가
+############################
+
+class QuizSourceType(str, Enum):
+    """퀴즈 출처 타입"""
+    KEYWORD = "KEYWORD"
+    ARTICLE = "ARTICLE"
+
+class QuizItem(BaseModel):
+    """단일 객관식 퀴즈 항목"""
+    question: str
+    options: List[str]
+    answer_index: int = Field(..., ge=0)
+    explanation: Optional[str] = None
+
+class QuizResponse(BaseModel):
+    """퀴즈 응답 스키마"""
+    quizzes: List[QuizItem]
+
+class QuizByKeywordRequest(BaseModel):
+    """키워드 기반 퀴즈 생성/조회 요청"""
+    keyword: str
+    count: int = 3
+
+class QuizByArticleRequest(BaseModel):
+    """기사 본문 기반 퀴즈 생성/조회 요청"""
+    title: str
+    content: str
+    count: int = 3
+
+class QuizDocument(BaseModel):
+    """MongoDB quizzes 컬렉션 문서 스키마 (문서당 1문항)"""
+    id: Optional[str] = Field(None, alias="_id")
+    sourceType: QuizSourceType
+    keyword: Optional[str] = None
+    articleHash: Optional[str] = None
+    title: Optional[str] = None
+    question: str
+    options: List[str]
+    answerIndex: int
+    explanation: Optional[str] = None
+    createdAt: datetime
+
+    class Config:
+        populate_by_name = True
+        use_enum_values = True

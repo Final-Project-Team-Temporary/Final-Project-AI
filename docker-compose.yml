@@ -22,17 +22,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
     ports:
       - "8000:8000"
-    environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
-      - HOST=0.0.0.0
-      - PORT=8000
-      - MONGO_URI=mongodb://mongodb:27017
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_USE_TLS=false
     depends_on:
       - mongodb
       - redis
@@ -43,12 +36,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
-    environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - MONGO_URI=mongodb://mongodb:27017
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_USE_TLS=false
+    env_file:
+      - .env
     depends_on:
       - mongodb
       - redis

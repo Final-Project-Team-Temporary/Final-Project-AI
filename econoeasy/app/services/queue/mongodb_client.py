@@ -5,7 +5,12 @@ from typing import Optional
 from datetime import datetime
 from bson import ObjectId
 from ...core.config import settings
-from ...models.schemas import ArticleDocument, SummarizedArticle, SummaryOutput, SummaryLevel
+from ...models.schemas import (
+    ArticleDocument,
+    SummarizedArticle,
+    SummaryOutput,
+    SummaryLevel,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +24,7 @@ class MongoDBClient:
         self.db = None
         self.articles_collection = None
         self.summarized_articles_collection = None
+        self.quizzes_collection = None
 
     async def connect(self):
         """MongoDB 연결"""
@@ -30,10 +36,23 @@ class MongoDBClient:
             self.db = self.client[settings.MONGO_DATABASE]
             self.articles_collection = self.db["articles"]
             self.summarized_articles_collection = self.db["summarized_articles"]
+            self.quizzes_collection = self.db["quizzes"]
 
             # 연결 테스트
             await self.client.admin.command('ping')
             logger.info("MongoDB 연결 성공")
+
+            # summarized_articles에 고유 인덱스 생성 (originalArticleId + summaryLevel)
+            # 중복 저장을 방지하고 upsert 동작을 안정화합니다.
+            try:
+                await self.summarized_articles_collection.create_index(
+                    [("originalArticleId", 1), ("summaryLevel", 1)],
+                    unique=True,
+                    name="uniq_originalArticleId_level"
+                )
+                logger.info("summarized_articles 인덱스 확인/생성 완료")
+            except Exception as index_err:
+                logger.warning(f"인덱스 생성 경고: {str(index_err)}")
         except Exception as e:
             logger.error(f"MongoDB 연결 실패: {str(e)}")
             raise
@@ -43,6 +62,8 @@ class MongoDBClient:
         if self.client:
             self.client.close()
             logger.info("MongoDB 연결 종료")
+
+    # AI 전용 서버에서는 퀴즈 저장/조회 기능을 사용하지 않습니다.
 
     async def get_article_by_id(self, article_id: str) -> Optional[ArticleDocument]:
         """
@@ -145,48 +166,36 @@ class MongoDBClient:
 
             summarized_at = datetime.utcnow()
 
-            # 3가지 난이도별로 문서 생성
-            summaries_to_insert = []
+            # upsert로 각 난이도 문서를 저장 (중복으로 전체 실패하는 문제 방지)
+            levels = [
+                (SummaryLevel.EASY, summary_output.easy),
+                (SummaryLevel.MEDIUM, summary_output.medium),
+                (SummaryLevel.ADVANCED, summary_output.advanced),
+            ]
 
-            # EASY 레벨
-            easy_summary = SummarizedArticle(
-                originalArticleId=article_id,
-                title=article_title,
-                summarizedContent=summary_output.easy,
-                summaryLevel=SummaryLevel.EASY,
-                summarizedAt=summarized_at,
-                publishedAt=published_at
-            )
-            summaries_to_insert.append(easy_summary.model_dump(by_alias=True, exclude={"id"}))
+            saved_or_updated = 0
 
-            # MEDIUM 레벨
-            medium_summary = SummarizedArticle(
-                originalArticleId=article_id,
-                title=article_title,
-                summarizedContent=summary_output.medium,
-                summaryLevel=SummaryLevel.MEDIUM,
-                summarizedAt=summarized_at,
-                publishedAt=published_at
-            )
-            summaries_to_insert.append(medium_summary.model_dump(by_alias=True, exclude={"id"}))
+            for level, content in levels:
+                doc = SummarizedArticle(
+                    originalArticleId=article_id,
+                    title=article_title,
+                    summarizedContent=content,
+                    summaryLevel=level,
+                    summarizedAt=summarized_at,
+                    publishedAt=published_at
+                ).model_dump(by_alias=True, exclude={"id"})
 
-            # ADVANCED 레벨
-            advanced_summary = SummarizedArticle(
-                originalArticleId=article_id,
-                title=article_title,
-                summarizedContent=summary_output.advanced,
-                summaryLevel=SummaryLevel.ADVANCED,
-                summarizedAt=summarized_at,
-                publishedAt=published_at
-            )
-            summaries_to_insert.append(advanced_summary.model_dump(by_alias=True, exclude={"id"}))
+                result = await self.summarized_articles_collection.update_one(
+                    {"originalArticleId": article_id, "summaryLevel": level.value},
+                    {"$set": doc},
+                    upsert=True,
+                )
 
-            # MongoDB에 3개 문서 일괄 삽입
-            result = await self.summarized_articles_collection.insert_many(summaries_to_insert)
+                if result.upserted_id is not None or result.modified_count > 0:
+                    saved_or_updated += 1
 
             logger.info(
-                f"요약 결과 저장 완료: articleId={article_id}, "
-                f"inserted_ids={len(result.inserted_ids)}"
+                f"요약 결과 저장/갱신 완료: articleId={article_id}, count={saved_or_updated}"
             )
 
         except Exception as e:
