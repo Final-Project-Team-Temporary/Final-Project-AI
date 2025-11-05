@@ -20,5 +20,3 @@ class PromptTemplates:
     def get_summary_prompt(cls, article_content: str) -> str:
         """기사 내용을 받아 요약 프롬프트를 생성합니다."""
         return cls.SUMMARY_PROMPT.format(article=article_content)
-
-    # Quiz 프롬프트는 services/quiz/prompts.py로 이동
