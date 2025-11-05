@@ -18,11 +18,15 @@ class RecommendationEngine:
         
         print(f"\n🏆 최종 추천 영상: {best_video['title']} (점수: {best_video['final_score']:.2f})")
         
+        # YouTube 영상 URL 생성
+        video_url = f"https://www.youtube.com/watch?v={best_video['video_id']}"
+        
         # 추천 결과 생성 (1개만)
         recommendation = {
             "rank": 1,
             "video_id": best_video["video_id"],
             "title": best_video["title"],
+            "video_url": video_url,
             "channel": best_video["channel"],
             "recommendation_score": best_video["final_score"],
             "quality_score": best_video["quality_score"],

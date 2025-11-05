@@ -5,7 +5,6 @@ import re
 from typing import Dict, Any
 from ...models.schemas import SummaryOutput
 
-
 class ResponseParser:
     
     @staticmethod

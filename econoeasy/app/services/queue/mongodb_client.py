@@ -5,7 +5,12 @@ from typing import Optional
 from datetime import datetime
 from bson import ObjectId
 from ...core.config import settings
-from ...models.schemas import ArticleDocument, SummarizedArticle, SummaryOutput, SummaryLevel
+from ...models.schemas import (
+    ArticleDocument,
+    SummarizedArticle,
+    SummaryOutput,
+    SummaryLevel,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +24,7 @@ class MongoDBClient:
         self.db = None
         self.articles_collection = None
         self.summarized_articles_collection = None
+        self.quizzes_collection = None
 
     async def connect(self):
         """MongoDB 연결"""
@@ -30,10 +36,23 @@ class MongoDBClient:
             self.db = self.client[settings.MONGO_DATABASE]
             self.articles_collection = self.db["articles"]
             self.summarized_articles_collection = self.db["summarized_articles"]
+            self.quizzes_collection = self.db["quizzes"]
 
             # 연결 테스트
             await self.client.admin.command('ping')
             logger.info("MongoDB 연결 성공")
+
+            # summarized_articles에 고유 인덱스 생성 (originalArticleId + summaryLevel)
+            # 중복 저장을 방지하고 upsert 동작을 안정화합니다.
+            try:
+                await self.summarized_articles_collection.create_index(
+                    [("originalArticleId", 1), ("summaryLevel", 1)],
+                    unique=True,
+                    name="uniq_originalArticleId_level"
+                )
+                logger.info("summarized_articles 인덱스 확인/생성 완료")
+            except Exception as index_err:
+                logger.warning(f"인덱스 생성 경고: {str(index_err)}")
         except Exception as e:
             logger.error(f"MongoDB 연결 실패: {str(e)}")
             raise
@@ -43,6 +62,8 @@ class MongoDBClient:
         if self.client:
             self.client.close()
             logger.info("MongoDB 연결 종료")
+
+    # AI 전용 서버에서는 퀴즈 저장/조회 기능을 사용하지 않습니다.
 
     async def get_article_by_id(self, article_id: str) -> Optional[ArticleDocument]:
         """
@@ -145,52 +166,157 @@ class MongoDBClient:
 
             summarized_at = datetime.utcnow()
 
-            # 3가지 난이도별로 문서 생성
-            summaries_to_insert = []
+            # upsert로 각 난이도 문서를 저장 (중복으로 전체 실패하는 문제 방지)
+            levels = [
+                (SummaryLevel.EASY, summary_output.easy),
+                (SummaryLevel.MEDIUM, summary_output.medium),
+                (SummaryLevel.ADVANCED, summary_output.advanced),
+            ]
 
-            # EASY 레벨
-            easy_summary = SummarizedArticle(
-                originalArticleId=article_id,
-                title=article_title,
-                summarizedContent=summary_output.easy,
-                summaryLevel=SummaryLevel.EASY,
-                summarizedAt=summarized_at,
-                publishedAt=published_at
-            )
-            summaries_to_insert.append(easy_summary.model_dump(by_alias=True, exclude={"id"}))
+            saved_or_updated = 0
 
-            # MEDIUM 레벨
-            medium_summary = SummarizedArticle(
-                originalArticleId=article_id,
-                title=article_title,
-                summarizedContent=summary_output.medium,
-                summaryLevel=SummaryLevel.MEDIUM,
-                summarizedAt=summarized_at,
-                publishedAt=published_at
-            )
-            summaries_to_insert.append(medium_summary.model_dump(by_alias=True, exclude={"id"}))
+            for level, content in levels:
+                doc = SummarizedArticle(
+                    originalArticleId=article_id,
+                    title=article_title,
+                    summarizedContent=content,
+                    summaryLevel=level,
+                    summarizedAt=summarized_at,
+                    publishedAt=published_at
+                ).model_dump(by_alias=True, exclude={"id"})
 
-            # ADVANCED 레벨
-            advanced_summary = SummarizedArticle(
-                originalArticleId=article_id,
-                title=article_title,
-                summarizedContent=summary_output.advanced,
-                summaryLevel=SummaryLevel.ADVANCED,
-                summarizedAt=summarized_at,
-                publishedAt=published_at
-            )
-            summaries_to_insert.append(advanced_summary.model_dump(by_alias=True, exclude={"id"}))
+                result = await self.summarized_articles_collection.update_one(
+                    {"originalArticleId": article_id, "summaryLevel": level.value},
+                    {"$set": doc},
+                    upsert=True,
+                )
 
-            # MongoDB에 3개 문서 일괄 삽입
-            result = await self.summarized_articles_collection.insert_many(summaries_to_insert)
+                if result.upserted_id is not None or result.modified_count > 0:
+                    saved_or_updated += 1
 
             logger.info(
-                f"요약 결과 저장 완료: articleId={article_id}, "
-                f"inserted_ids={len(result.inserted_ids)}"
+                f"요약 결과 저장/갱신 완료: articleId={article_id}, count={saved_or_updated}"
             )
 
         except Exception as e:
             logger.error(f"요약 결과 저장 중 오류 (articleId={article_id}): {str(e)}")
+            raise
+
+    # 전역 MongoDB 클라이언트 인스턴스
+    async def save_quiz(
+        self,
+        source_type: str,
+        quizzes_data,
+        keyword: Optional[str] = None,
+        article_id: Optional[str] = None,
+        article_title: Optional[str] = None
+    ):
+        """
+        퀴즈 결과를 MongoDB quizzes 컬렉션에 저장합니다.
+
+        Args:
+            source_type: 퀴즈 출처 타입 (KEYWORD 또는 ARTICLE)
+            quizzes_data: QuizResponse의 quizzes 리스트
+            keyword: 키워드 (source_type=KEYWORD일 때)
+            article_id: 기사 ID (source_type=ARTICLE일 때)
+            article_title: 기사 제목 (source_type=ARTICLE일 때)
+        """
+        try:
+            if self.quizzes_collection is None:
+                raise RuntimeError("MongoDB가 연결되지 않았습니다")
+
+            from ...models.schemas import QuizDocument
+            
+            # QuizDocument 생성
+            doc_data = {
+                "sourceType": source_type,
+                "keyword": keyword,
+                "articleId": article_id,
+                "articleTitle": article_title,
+                "quizzes": [quiz.model_dump() for quiz in quizzes_data],
+                "createdAt": datetime.utcnow(),
+            }
+
+            # 키워드 또는 articleId를 기준으로 upsert
+            if source_type == "KEYWORD" and keyword:
+                result = await self.quizzes_collection.update_one(
+                    {"sourceType": "KEYWORD", "keyword": keyword},
+                    {"$set": doc_data},
+                    upsert=True,
+                )
+            elif source_type == "ARTICLE" and article_id:
+                result = await self.quizzes_collection.update_one(
+                    {"sourceType": "ARTICLE", "articleId": article_id},
+                    {"$set": doc_data},
+                    upsert=True,
+                )
+            else:
+                raise ValueError("keyword 또는 article_id가 필요합니다")
+
+            logger.info(f"퀴즈 저장/갱신 완료: {source_type}, {keyword or article_id}")
+
+        except Exception as e:
+            logger.error(f"퀴즈 저장 중 오류: {str(e)}")
+            raise
+
+    async def get_quiz_by_keyword(self, keyword: str):
+        """
+        키워드로 저장된 퀴즈를 조회합니다.
+
+        Args:
+            keyword: 검색할 키워드
+
+        Returns:
+            저장된 퀴즈 데이터 또는 None
+        """
+        try:
+            if self.quizzes_collection is None:
+                raise RuntimeError("MongoDB가 연결되지 않았습니다")
+
+            quiz_data = await self.quizzes_collection.find_one({
+                "sourceType": "KEYWORD",
+                "keyword": keyword
+            })
+
+            if quiz_data:
+                logger.info(f"저장된 키워드 퀴즈 조회 완료: {keyword}")
+            else:
+                logger.info(f"저장된 키워드 퀴즈 없음: {keyword}")
+
+            return quiz_data
+
+        except Exception as e:
+            logger.error(f"퀴즈 조회 중 오류 (keyword={keyword}): {str(e)}")
+            raise
+
+    async def get_quiz_by_article(self, article_id: str):
+        """
+        기사 ID로 저장된 퀴즈를 조회합니다.
+
+        Args:
+            article_id: 기사 ID
+
+        Returns:
+            저장된 퀴즈 데이터 또는 None
+        """
+        try:
+            if self.quizzes_collection is None:
+                raise RuntimeError("MongoDB가 연결되지 않았습니다")
+
+            quiz_data = await self.quizzes_collection.find_one({
+                "sourceType": "ARTICLE",
+                "articleId": article_id
+            })
+
+            if quiz_data:
+                logger.info(f"저장된 기사 퀴즈 조회 완료: {article_id}")
+            else:
+                logger.info(f"저장된 기사 퀴즈 없음: {article_id}")
+
+            return quiz_data
+
+        except Exception as e:
+            logger.error(f"퀴즈 조회 중 오류 (articleId={article_id}): {str(e)}")
             raise
 
 

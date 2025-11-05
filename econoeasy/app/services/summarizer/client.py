@@ -16,6 +16,10 @@ class LLMClient:
             temperature=settings.GEMINI_TEMPERATURE
         )
     
+    async def ainvoke(self, prompt: str):
+        """프롬프트를 LLM에 비동기로 전송하고 응답을 받습니다."""
+        return await self.llm.ainvoke(prompt)
+    
     def invoke(self, prompt: str):
-        """프롬프트를 LLM에 전송하고 응답을 받습니다."""
+        """프롬프트를 LLM에 전송하고 응답을 받습니다. (동기)"""
         return self.llm.invoke(prompt)

@@ -81,6 +81,7 @@ class VideoRecommendation(BaseModel):
     rank: int
     title: str
     video_id: str
+    video_url: str
     channel: str
     recommendation_score: float
     quality_score: float
@@ -102,3 +103,45 @@ class ErrorResponse(BaseModel):
     """에러 응답 스키마"""
     error: str
     detail: Optional[str] = None
+
+# Quiz 관련 스키마
+
+class QuizSourceType(str, Enum):
+    """퀴즈 출처 타입"""
+    KEYWORD = "KEYWORD"
+    ARTICLE = "ARTICLE"
+
+class QuizItem(BaseModel):
+    """단일 객관식 퀴즈 항목"""
+    question: str
+    options: List[str]
+    answer_index: int = Field(..., ge=0)
+    explanation: Optional[str] = None
+
+class QuizResponse(BaseModel):
+    """퀴즈 응답 스키마"""
+    quizzes: List[QuizItem]
+
+class QuizByKeywordRequest(BaseModel):
+    """키워드 기반 퀴즈 생성/조회 요청"""
+    keyword: str
+    count: int = 3
+
+class QuizByArticleRequest(BaseModel):
+    """기사 ID 기반 퀴즈 생성/조회 요청"""
+    article_id: str
+    count: int = 3
+
+class QuizDocument(BaseModel):
+    """MongoDB quizzes 컬렉션 문서 스키마 (여러 문항을 한 문서로 저장)"""
+    id: Optional[str] = Field(None, alias="_id")
+    sourceType: QuizSourceType
+    keyword: Optional[str] = None
+    articleId: Optional[str] = None
+    articleTitle: Optional[str] = None
+    quizzes: List[QuizItem]
+    createdAt: datetime
+
+    class Config:
+        populate_by_name = True
+        use_enum_values = True
