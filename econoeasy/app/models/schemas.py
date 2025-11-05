@@ -81,6 +81,7 @@ class VideoRecommendation(BaseModel):
     rank: int
     title: str
     video_id: str
+    video_url: str
     channel: str
     recommendation_score: float
     quality_score: float
@@ -103,9 +104,7 @@ class ErrorResponse(BaseModel):
     error: str
     detail: Optional[str] = None
 
-############################
-# Quiz 관련 스키마 추가
-############################
+# Quiz 관련 스키마
 
 class QuizSourceType(str, Enum):
     """퀴즈 출처 타입"""
