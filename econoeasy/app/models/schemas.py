@@ -129,22 +129,18 @@ class QuizByKeywordRequest(BaseModel):
     count: int = 3
 
 class QuizByArticleRequest(BaseModel):
-    """기사 본문 기반 퀴즈 생성/조회 요청"""
-    title: str
-    content: str
+    """기사 ID 기반 퀴즈 생성/조회 요청"""
+    article_id: str
     count: int = 3
 
 class QuizDocument(BaseModel):
-    """MongoDB quizzes 컬렉션 문서 스키마 (문서당 1문항)"""
+    """MongoDB quizzes 컬렉션 문서 스키마 (여러 문항을 한 문서로 저장)"""
     id: Optional[str] = Field(None, alias="_id")
     sourceType: QuizSourceType
     keyword: Optional[str] = None
-    articleHash: Optional[str] = None
-    title: Optional[str] = None
-    question: str
-    options: List[str]
-    answerIndex: int
-    explanation: Optional[str] = None
+    articleId: Optional[str] = None
+    articleTitle: Optional[str] = None
+    quizzes: List[QuizItem]
     createdAt: datetime
 
     class Config:

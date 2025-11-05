@@ -202,6 +202,123 @@ class MongoDBClient:
             logger.error(f"요약 결과 저장 중 오류 (articleId={article_id}): {str(e)}")
             raise
 
+    # 전역 MongoDB 클라이언트 인스턴스
+    async def save_quiz(
+        self,
+        source_type: str,
+        quizzes_data,
+        keyword: Optional[str] = None,
+        article_id: Optional[str] = None,
+        article_title: Optional[str] = None
+    ):
+        """
+        퀴즈 결과를 MongoDB quizzes 컬렉션에 저장합니다.
+
+        Args:
+            source_type: 퀴즈 출처 타입 (KEYWORD 또는 ARTICLE)
+            quizzes_data: QuizResponse의 quizzes 리스트
+            keyword: 키워드 (source_type=KEYWORD일 때)
+            article_id: 기사 ID (source_type=ARTICLE일 때)
+            article_title: 기사 제목 (source_type=ARTICLE일 때)
+        """
+        try:
+            if self.quizzes_collection is None:
+                raise RuntimeError("MongoDB가 연결되지 않았습니다")
+
+            from ...models.schemas import QuizDocument
+            
+            # QuizDocument 생성
+            doc_data = {
+                "sourceType": source_type,
+                "keyword": keyword,
+                "articleId": article_id,
+                "articleTitle": article_title,
+                "quizzes": [quiz.model_dump() for quiz in quizzes_data],
+                "createdAt": datetime.utcnow(),
+            }
+
+            # 키워드 또는 articleId를 기준으로 upsert
+            if source_type == "KEYWORD" and keyword:
+                result = await self.quizzes_collection.update_one(
+                    {"sourceType": "KEYWORD", "keyword": keyword},
+                    {"$set": doc_data},
+                    upsert=True,
+                )
+            elif source_type == "ARTICLE" and article_id:
+                result = await self.quizzes_collection.update_one(
+                    {"sourceType": "ARTICLE", "articleId": article_id},
+                    {"$set": doc_data},
+                    upsert=True,
+                )
+            else:
+                raise ValueError("keyword 또는 article_id가 필요합니다")
+
+            logger.info(f"퀴즈 저장/갱신 완료: {source_type}, {keyword or article_id}")
+
+        except Exception as e:
+            logger.error(f"퀴즈 저장 중 오류: {str(e)}")
+            raise
+
+    async def get_quiz_by_keyword(self, keyword: str):
+        """
+        키워드로 저장된 퀴즈를 조회합니다.
+
+        Args:
+            keyword: 검색할 키워드
+
+        Returns:
+            저장된 퀴즈 데이터 또는 None
+        """
+        try:
+            if self.quizzes_collection is None:
+                raise RuntimeError("MongoDB가 연결되지 않았습니다")
+
+            quiz_data = await self.quizzes_collection.find_one({
+                "sourceType": "KEYWORD",
+                "keyword": keyword
+            })
+
+            if quiz_data:
+                logger.info(f"저장된 키워드 퀴즈 조회 완료: {keyword}")
+            else:
+                logger.info(f"저장된 키워드 퀴즈 없음: {keyword}")
+
+            return quiz_data
+
+        except Exception as e:
+            logger.error(f"퀴즈 조회 중 오류 (keyword={keyword}): {str(e)}")
+            raise
+
+    async def get_quiz_by_article(self, article_id: str):
+        """
+        기사 ID로 저장된 퀴즈를 조회합니다.
+
+        Args:
+            article_id: 기사 ID
+
+        Returns:
+            저장된 퀴즈 데이터 또는 None
+        """
+        try:
+            if self.quizzes_collection is None:
+                raise RuntimeError("MongoDB가 연결되지 않았습니다")
+
+            quiz_data = await self.quizzes_collection.find_one({
+                "sourceType": "ARTICLE",
+                "articleId": article_id
+            })
+
+            if quiz_data:
+                logger.info(f"저장된 기사 퀴즈 조회 완료: {article_id}")
+            else:
+                logger.info(f"저장된 기사 퀴즈 없음: {article_id}")
+
+            return quiz_data
+
+        except Exception as e:
+            logger.error(f"퀴즈 조회 중 오류 (articleId={article_id}): {str(e)}")
+            raise
+
 
 # 전역 MongoDB 클라이언트 인스턴스
 mongodb_client = MongoDBClient()
