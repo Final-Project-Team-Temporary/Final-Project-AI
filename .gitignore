@@ -1,4 +1,13 @@
 venv/
 __pycache__/
 *.pyc
+
+# 환경/개인 파일
 .env
+t-Path .env
+tash
+
+# 대용량 파일
+*.tar
+*.tar.gz
+*.zip
