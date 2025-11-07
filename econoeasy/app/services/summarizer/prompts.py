@@ -1,6 +1,5 @@
 """요약 프롬프트 템플릿"""
 
-
 class PromptTemplates:
     
     SUMMARY_PROMPT = """

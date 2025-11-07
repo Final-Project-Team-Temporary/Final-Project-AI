@@ -37,6 +37,7 @@ async def recommend_videos(request: RecommendationRequest):
                 "rank": 1,
                 "title": "파이썬 기초 강의",
                 "video_id": "abc123",
+                "video_url": "https://www.youtube.com/watch?v=abc123",
                 "channel": "코딩채널",
                 "recommendation_score": 85.5,
                 "quality_score": 78.2,
