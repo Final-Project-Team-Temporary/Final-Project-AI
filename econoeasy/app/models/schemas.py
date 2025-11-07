@@ -82,7 +82,7 @@ class VideoMetrics(BaseModel):
     comment_count: int
     positive_ratio: float
 
-class VideoRecommendati냄on(BaseModel):
+class VideoRecommendation(BaseModel):
     """영상 추천 결과 스키마"""
     rank: int
     title: str
