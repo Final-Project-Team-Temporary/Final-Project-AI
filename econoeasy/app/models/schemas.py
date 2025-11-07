@@ -82,7 +82,7 @@ class VideoMetrics(BaseModel):
     comment_count: int
     positive_ratio: float
 
-class VideoRecommendation(BaseModel):
+class VideoRecommendati냄on(BaseModel):
     """영상 추천 결과 스키마"""
     rank: int
     title: str
@@ -104,8 +104,16 @@ class RecommendationResponse(BaseModel):
     recommendations: List[VideoRecommendation]
 
 # YouTube 추천 결과 스트림 스키마 (Java로 전송)
+class YoutubeVideoMetrics(BaseModel):
+    """YouTube 영상 메트릭스 (camelCase, Java 전송용)"""
+    viewCount: str
+    likeCount: str
+    commentCount: int
+    positiveRatio: float
+
 class YoutubeVideo(BaseModel):
     """YouTube 영상 정보 (Java 전송용)"""
+    rank: int
     videoId: str
     title: str
     channel: str
@@ -116,14 +124,13 @@ class YoutubeVideo(BaseModel):
     contentAccuracy: float
     analysisSummary: str
     trustComment: str
-    viewCount: str
-    likeCount: str
-    commentCount: int
+    metrics: YoutubeVideoMetrics
 
     @classmethod
     def from_recommendation(cls, rec: VideoRecommendation):
         """VideoRecommendation을 YoutubeVideo로 변환"""
         return cls(
+            rank=rec.rank,
             videoId=rec.video_id,
             title=rec.title,
             channel=rec.channel,
@@ -134,9 +141,12 @@ class YoutubeVideo(BaseModel):
             contentAccuracy=rec.content_accuracy,
             analysisSummary=rec.analysis_summary,
             trustComment=rec.trust_comment,
-            viewCount=rec.metrics.view_count,
-            likeCount=rec.metrics.like_count,
-            commentCount=rec.metrics.comment_count
+            metrics=YoutubeVideoMetrics(
+                viewCount=rec.metrics.view_count,
+                likeCount=rec.metrics.like_count,
+                commentCount=rec.metrics.comment_count,
+                positiveRatio=rec.metrics.positive_ratio
+            )
         )
 
 class YoutubeRecommendResultStreamMessage(BaseModel):
