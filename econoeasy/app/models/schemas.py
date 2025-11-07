@@ -110,6 +110,7 @@ class YoutubeVideo(BaseModel):
     videoId: str
     title: str
     channel: str
+    videoUrl: str
     recommendationScore: float
     qualityScore: float
     relevanceScore: float
@@ -128,6 +129,7 @@ class YoutubeVideo(BaseModel):
             videoId=rec.video_id,
             title=rec.title,
             channel=rec.channel,
+            videoUrl=rec.video_url,
             recommendationScore=rec.recommendation_score,
             qualityScore=rec.quality_score,
             relevanceScore=rec.relevance_score,
