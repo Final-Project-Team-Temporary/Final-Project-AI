@@ -96,10 +96,6 @@ class MongoDBClient:
             # ObjectId를 문자열로 변환
             if '_id' in article_data:
                 article_data['_id'] = str(article_data['_id'])
-            
-            # datetime을 문자열로 변환
-            if 'publishedAt' in article_data and isinstance(article_data['publishedAt'], datetime):
-                article_data['publishedAt'] = article_data['publishedAt'].isoformat()
 
             # Pydantic 모델로 변환
             return ArticleDocument(**article_data)
@@ -147,7 +143,7 @@ class MongoDBClient:
         self,
         article_id: str,
         article_title: str,
-        published_at: Optional[str],
+        published_at: Optional[datetime],
         summary_output: SummaryOutput
     ):
         """
@@ -157,7 +153,7 @@ class MongoDBClient:
         Args:
             article_id: 원본 기사 ID
             article_title: 기사 제목
-            published_at: 기사 발행일
+            published_at: 기사 발행일 (datetime 객체)
             summary_output: 요약 결과 (3가지 난이도 포함)
         """
         try:

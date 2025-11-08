@@ -24,12 +24,15 @@ class ArticleDocument(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     title: str
     content: str
-    publishedAt: str
+    publishedAt: datetime
     url: str
     summary_status: str = "BEFORE_ENQUEUED"
 
     class Config:
         populate_by_name = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 class RedisStreamMessage(BaseModel):
     """Redis Stream 메시지 스키마 (Article Summarize용)"""
@@ -63,11 +66,14 @@ class SummarizedArticle(BaseModel):
     summarizedContent: str
     summaryLevel: SummaryLevel
     summarizedAt: datetime
-    publishedAt: Optional[str] = None
+    publishedAt: Optional[datetime] = None
 
     class Config:
         populate_by_name = True
         use_enum_values = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 # YouTube 추천 관련 스키마
 class RecommendationRequest(BaseModel):
