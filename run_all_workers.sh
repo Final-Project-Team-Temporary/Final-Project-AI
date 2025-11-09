@@ -2,7 +2,7 @@
 
 # ====================================================
 # EconoEasy All Workers 실행 스크립트
-# (Article Worker + Recommend Worker 동시 실행)
+# (Article + Recommend + Keyword Worker 동시 실행)
 # ====================================================
 
 echo "==================================="
@@ -54,9 +54,10 @@ fi
 
 echo "✓ 모든 의존성 확인 완료"
 echo ""
-echo "두 워커를 시작합니다..."
+echo "세 워커를 시작합니다..."
 echo "  - Article Worker (기사 요약)"
 echo "  - Recommend Worker (영상 추천)"
+echo "  - Keyword Worker (키워드 추출)"
 echo "종료하려면 Ctrl+C를 누르세요."
 echo ""
 
@@ -65,8 +66,8 @@ echo ""
 cleanup() {
     echo ""
     echo "워커 종료 중..."
-    kill $ARTICLE_WORKER_PID $RECOMMEND_WORKER_PID 2>/dev/null
-    wait $ARTICLE_WORKER_PID $RECOMMEND_WORKER_PID 2>/dev/null
+    kill $ARTICLE_WORKER_PID $RECOMMEND_WORKER_PID $KEYWORD_WORKER_PID 2>/dev/null
+    wait $ARTICLE_WORKER_PID $RECOMMEND_WORKER_PID $KEYWORD_WORKER_PID 2>/dev/null
     echo "모든 워커가 종료되었습니다."
     exit 0
 }
@@ -83,12 +84,18 @@ echo "🎬 Recommend Worker 시작 중..."
 python -m app.services.recommend_queue.worker &
 RECOMMEND_WORKER_PID=$!
 
+# Keyword Worker 백그라운드 실행
+echo "🔑 Keyword Worker 시작 중..."
+python -m app.services.keyword_queue.worker &
+KEYWORD_WORKER_PID=$!
+
 echo ""
-echo "✓ 두 워커가 모두 실행되었습니다."
+echo "✓ 세 워커가 모두 실행되었습니다."
 echo "  - Article Worker PID: $ARTICLE_WORKER_PID"
 echo "  - Recommend Worker PID: $RECOMMEND_WORKER_PID"
+echo "  - Keyword Worker PID: $KEYWORD_WORKER_PID"
 echo ""
 
 # 워커들이 종료될 때까지 대기
-wait $ARTICLE_WORKER_PID $RECOMMEND_WORKER_PID
+wait $ARTICLE_WORKER_PID $RECOMMEND_WORKER_PID $KEYWORD_WORKER_PID
 
