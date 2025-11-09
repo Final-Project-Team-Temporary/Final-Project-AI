@@ -145,3 +145,21 @@ class QuizDocument(BaseModel):
     class Config:
         populate_by_name = True
         use_enum_values = True
+
+# Keyword 관련 스키마
+
+class TermSummary(BaseModel):
+    term: str
+    term_summary: str
+
+class KeywordTermsResponse(BaseModel):
+    results: List[TermSummary]
+
+class StockMatch(BaseModel):
+    stock_name: str
+    stock_code: str
+    market: Optional[str] = None
+    sector: Optional[str] = None
+
+class KeywordStockResponse(BaseModel):
+    matched_stocks: List[StockMatch]

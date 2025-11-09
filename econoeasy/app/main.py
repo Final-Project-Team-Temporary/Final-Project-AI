@@ -2,8 +2,10 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from .core.config import settings
 from .routers import summarize, recommend
-from .routers import quiz
+from .routers import quiz, keyword
 from .services.queue.mongodb_client import mongodb_client
+
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,7 @@ app = FastAPI(
 app.include_router(summarize.router)
 app.include_router(recommend.router)
 app.include_router(quiz.router)
+app.include_router(keyword.router)
 
 # MongoDB 라이프사이클 이벤트
 @app.on_event("startup")
