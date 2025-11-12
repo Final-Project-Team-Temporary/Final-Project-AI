@@ -3,7 +3,7 @@
 import json
 import re
 from typing import List
-from econoeasy.app.models.schemas import (
+from ...models.schemas import (
      TermSummary, KeywordTermsResponse
 )
 
