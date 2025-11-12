@@ -35,15 +35,15 @@ class RecommenderService:
             # Step 2: 각 영상의 댓글 15개를 Gemini API로 분석
             analyzed_videos = await self.video_analyzer.analyze_videos(videos, keyword)
             
-            # Step 3: 최고 점수 1개만 추천
-            recommendation = self.recommendation_engine.create_recommendation(analyzed_videos)
+            # Step 3: 최고 점수 top_n개 추천
+            recommendations = self.recommendation_engine.create_recommendation(analyzed_videos, top_n)
             
-            print(f"✅ 추천 완료: 총 {len(analyzed_videos)}개 영상 분석, 1개 추천")
+            print(f"✅ 추천 완료: 총 {len(analyzed_videos)}개 영상 분석, {len(recommendations)}개 추천")
             
             return {
                 "status": "success",
                 "total_analyzed": len(analyzed_videos),
-                "recommendations": [recommendation] if recommendation else []
+                "recommendations": recommendations
             }
             
         except Exception as e:
