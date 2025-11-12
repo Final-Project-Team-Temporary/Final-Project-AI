@@ -45,10 +45,18 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_USE_TLS: bool = True
     REDIS_SSL_CERT_REQS: str = "required"
+
+    # Article Summarize Redis Stream 설정
     REDIS_STREAM_KEY: str = "article-stream"
     REDIS_DEDUP_KEY: str = "processed-articles"
     REDIS_CONSUMER_GROUP: str = "article-processors"
     REDIS_CONSUMER_NAME: str = "worker-1"
+
+    # YouTube Recommend Redis Stream 설정
+    REDIS_RECOMMEND_STREAM_KEY: str = "youtube-recommend-stream"
+    REDIS_RECOMMEND_RESULT_STREAM_KEY: str = "youtube-recommend-result-stream"
+    REDIS_RECOMMEND_CONSUMER_GROUP: str = "recommend-processors"
+    REDIS_RECOMMEND_CONSUMER_NAME: str = "recommend-worker-1"
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),

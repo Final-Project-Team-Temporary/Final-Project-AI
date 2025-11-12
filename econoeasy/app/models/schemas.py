@@ -24,16 +24,25 @@ class ArticleDocument(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     title: str
     content: str
-    publishedAt: str
+    publishedAt: datetime
     url: str
     summary_status: str = "BEFORE_ENQUEUED"
 
     class Config:
         populate_by_name = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 class RedisStreamMessage(BaseModel):
-    """Redis Stream 메시지 스키마"""
+    """Redis Stream 메시지 스키마 (Article Summarize용)"""
     articleId: str
+    timestamp: str
+
+class KeywordRecommendStreamMessage(BaseModel):
+    """Redis Stream 메시지 스키마 (YouTube Recommend 요청)"""
+    keywordId: str
+    keywordName: str
     timestamp: str
 
 # 요약 관련 스키마
@@ -57,11 +66,14 @@ class SummarizedArticle(BaseModel):
     summarizedContent: str
     summaryLevel: SummaryLevel
     summarizedAt: datetime
-    publishedAt: Optional[str] = None
+    publishedAt: Optional[datetime] = None
 
     class Config:
         populate_by_name = True
         use_enum_values = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 # YouTube 추천 관련 스키마
 class RecommendationRequest(BaseModel):
@@ -97,6 +109,59 @@ class RecommendationResponse(BaseModel):
     status: str
     total_analyzed: int
     recommendations: List[VideoRecommendation]
+
+# YouTube 추천 결과 스트림 스키마 (Java로 전송)
+class YoutubeVideoMetrics(BaseModel):
+    """YouTube 영상 메트릭스 (camelCase, Java 전송용)"""
+    viewCount: str
+    likeCount: str
+    commentCount: int
+    positiveRatio: float
+
+class YoutubeVideo(BaseModel):
+    """YouTube 영상 정보 (Java 전송용)"""
+    rank: int
+    videoId: str
+    title: str
+    channel: str
+    videoUrl: str
+    recommendationScore: float
+    qualityScore: float
+    relevanceScore: float
+    educationalValue: float
+    contentAccuracy: float
+    analysisSummary: str
+    trustComment: str
+    metrics: YoutubeVideoMetrics
+
+    @classmethod
+    def from_recommendation(cls, rec: VideoRecommendation):
+        """VideoRecommendation을 YoutubeVideo로 변환"""
+        return cls(
+            rank=rec.rank,
+            videoId=rec.video_id,
+            title=rec.title,
+            channel=rec.channel,
+            videoUrl=rec.video_url,
+            recommendationScore=rec.recommendation_score,
+            qualityScore=rec.quality_score,
+            relevanceScore=rec.relevance_score,
+            educationalValue=rec.educational_value,
+            contentAccuracy=rec.content_accuracy,
+            analysisSummary=rec.analysis_summary,
+            trustComment=rec.trust_comment,
+            metrics=YoutubeVideoMetrics(
+                viewCount=rec.metrics.view_count,
+                likeCount=rec.metrics.like_count,
+                commentCount=rec.metrics.comment_count,
+                positiveRatio=rec.metrics.positive_ratio
+            )
+        )
+
+class YoutubeRecommendResultStreamMessage(BaseModel):
+    """Redis Stream 메시지 스키마 (YouTube Recommend 결과)"""
+    keywordId: str
+    videos: List[YoutubeVideo]
 
 # 공통 응답 스키마
 class ErrorResponse(BaseModel):
