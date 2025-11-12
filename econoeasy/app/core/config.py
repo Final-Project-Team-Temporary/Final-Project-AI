@@ -58,6 +58,12 @@ class Settings(BaseSettings):
     REDIS_RECOMMEND_CONSUMER_GROUP: str = "recommend-processors"
     REDIS_RECOMMEND_CONSUMER_NAME: str = "recommend-worker-1"
 
+    # Keyword Extraction Redis Stream 설정
+    REDIS_KEYWORD_STREAM_KEY: str = "article-stream"
+    REDIS_KEYWORD_RESULT_STREAM_KEY: str = "article-keyword-result-stream"
+    REDIS_KEYWORD_CONSUMER_GROUP: str = "article-keyword-request-processors"
+    REDIS_KEYWORD_CONSUMER_NAME: str = "article-keyword-request-worker-1"
+
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),
         env_file_encoding="utf-8",
