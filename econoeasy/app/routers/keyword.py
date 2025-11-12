@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from econoeasy.app.models.schemas import ArticleInput, KeywordTermsResponse, KeywordStockResponse
+from ..models.schemas import ArticleInput, KeywordTermsResponse, KeywordStockResponse
 from ..services.keyword.service import keyword_service
 
 router = APIRouter(prefix="/keyword", tags=["keyword"])
