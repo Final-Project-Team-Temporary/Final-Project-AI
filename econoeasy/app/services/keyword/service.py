@@ -6,7 +6,7 @@ from typing import List
 from .client import LLMClient
 from .prompts import KeywordPromptTemplates
 from .parser import KeywordResponseParser
-from econoeasy.app.models.schemas import (
+from ...models.schemas import (
     ArticleInput, TermSummary, KeywordTermsResponse,
     StockMatch, KeywordStockResponse
 )
