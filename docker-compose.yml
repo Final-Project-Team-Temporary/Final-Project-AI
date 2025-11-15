@@ -31,11 +31,38 @@ services:
       - redis
     restart: unless-stopped
 
-  # 백그라운드 워커 (요약 수행 + MongoDB 저장)
-  econoeasy-worker:
+  # 백그라운드 워커1 (기사 요약)
+  econoeasy-worker-article:
     build:
       context: .
       dockerfile: Dockerfile.worker
+    command: python -m app.services.queue.worker
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+      - redis
+    restart: unless-stopped
+
+  # 백그라운드 워커2 (영상 추천)
+  econoeasy-worker-recommend:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: python -m app.services.recommend_queue.worker
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+      - redis
+    restart: unless-stopped
+
+  # 백그라운드 워커3 (키워드 추출)
+  econoeasy-worker-keyword:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: python -m app.services.keyword_queue.worker
     env_file:
       - .env
     depends_on:
