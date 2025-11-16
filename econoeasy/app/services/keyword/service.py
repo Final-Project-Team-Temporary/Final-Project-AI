@@ -8,7 +8,7 @@ from .prompts import KeywordPromptTemplates
 from .parser import KeywordResponseParser
 from ...models.schemas import (
     ArticleInput, TermSummary, KeywordTermsResponse,
-    StockMatch, KeywordStockResponse
+    StockMatch, KeywordStockResponse, TermDefineResponse
 )
 
 # 파일 경로 설정
@@ -71,6 +71,23 @@ class KeywordService:
             filtered_matches.append(m)
     
         return KeywordStockResponse(matched_stocks=filtered_matches)
+
+
+    
+    async def define_term(self, term: str) -> TermDefineResponse:
+        """특정 용어를 LLM으로 설명하도록 요청"""
+        try:
+            prompt = self.prompt_templates.get_define_prompt(term)
+            response = await self.llm_client.ainvoke(prompt)
+            text = response.content if hasattr(response, "content") else str(response)
+
+            return self.response_parser.parse_define_response(text)
+
+        except Exception:
+            return TermDefineResponse(
+                term=term,
+                definition="해당 용어 설명을 생성할 수 없습니다."
+            )
 
 
 keyword_service = KeywordService()
