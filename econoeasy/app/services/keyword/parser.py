@@ -4,7 +4,7 @@ import json
 import re
 from typing import List
 from ...models.schemas import (
-     TermSummary, KeywordTermsResponse
+     TermSummary, KeywordTermsResponse, TermDefineResponse
 )
 
 class KeywordResponseParser:
@@ -45,3 +45,27 @@ class KeywordResponseParser:
             term_summary=article_content[:100] + "..." if len(article_content) > 100 else article_content
         )
         return KeywordTermsResponse(results=[default_term])
+
+    @staticmethod
+    def parse_define_response(response_text: str) -> TermDefineResponse:
+        try:
+            # JSON 블록 처리
+            if '```json' in response_text:
+                start = response_text.find('```json') + 7
+                end = response_text.find('```', start)
+                json_content = response_text[start:end].strip()
+                parsed = json.loads(json_content)
+            else:
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                if json_match:
+                    parsed = json.loads(json_match.group())
+                else:
+                    raise ValueError("JSON 형식을 찾을 수 없습니다.")
+    
+            return TermDefineResponse(
+                term=parsed["term"],
+                definition=parsed["definition"]
+            )
+    
+        except Exception as e:
+            raise ValueError(f"용어 정의 파싱 실패: {e}")

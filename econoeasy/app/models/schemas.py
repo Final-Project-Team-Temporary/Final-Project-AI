@@ -228,3 +228,10 @@ class StockMatch(BaseModel):
 
 class KeywordStockResponse(BaseModel):
     matched_stocks: List[StockMatch]
+
+class TermDefineRequest(BaseModel):
+    term: str
+
+class TermDefineResponse(BaseModel):
+    term: str
+    definition: str
