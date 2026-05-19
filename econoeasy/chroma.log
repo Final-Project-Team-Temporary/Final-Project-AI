@@ -1,0 +1,31 @@
+WARNING:  [19-05-2026 14:49:59] chroma_server_nofile is set to 65535, but this is less than current soft limit of 1048576. chroma_server_nofile will not be set.
+INFO:     [19-05-2026 14:49:59] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+DEBUG:    [19-05-2026 14:49:59] Starting component System
+DEBUG:    [19-05-2026 14:49:59] Starting component OpenTelemetryClient
+DEBUG:    [19-05-2026 14:49:59] Starting component SqliteDB
+DEBUG:    [19-05-2026 14:49:59] Starting component SimpleQuotaEnforcer
+DEBUG:    [19-05-2026 14:49:59] Starting component Posthog
+DEBUG:    [19-05-2026 14:49:59] Starting component SimpleRateLimitEnforcer
+DEBUG:    [19-05-2026 14:49:59] Starting component LocalSegmentManager
+DEBUG:    [19-05-2026 14:49:59] Starting component LocalExecutor
+DEBUG:    [19-05-2026 14:49:59] Starting component SegmentAPI
+ERROR:    [19-05-2026 14:49:59] Failed to send telemetry event ServerStartEvent: capture() takes 1 positional argument but 3 were given
+INFO:     [19-05-2026 14:50:00] Started server process [8182]
+INFO:     [19-05-2026 14:50:00] Waiting for application startup.
+INFO:     [19-05-2026 14:50:00] Application startup complete.
+INFO:     [19-05-2026 14:50:00] Uvicorn running on http://localhost:8001 (Press CTRL+C to quit)
+INFO:     [19-05-2026 14:50:00] ::1:60530 - "GET /api/v1/heartbeat HTTP/1.1" 200
+INFO:     [19-05-2026 14:52:52] ::1:60920 - "GET /api/v1/heartbeat HTTP/1.1" 200
+INFO:     [19-05-2026 14:52:52] Shutting down
+INFO:     [19-05-2026 14:52:52] Waiting for application shutdown.
+DEBUG:    [19-05-2026 14:52:52] Stopping component System
+DEBUG:    [19-05-2026 14:52:52] Stopping component SegmentAPI
+DEBUG:    [19-05-2026 14:52:52] Stopping component LocalExecutor
+DEBUG:    [19-05-2026 14:52:52] Stopping component LocalSegmentManager
+DEBUG:    [19-05-2026 14:52:52] Stopping component SimpleRateLimitEnforcer
+DEBUG:    [19-05-2026 14:52:52] Stopping component Posthog
+DEBUG:    [19-05-2026 14:52:52] Stopping component SimpleQuotaEnforcer
+DEBUG:    [19-05-2026 14:52:52] Stopping component SqliteDB
+DEBUG:    [19-05-2026 14:52:52] Stopping component OpenTelemetryClient
+INFO:     [19-05-2026 14:52:52] Application shutdown complete.
+INFO:     [19-05-2026 14:52:52] Finished server process [8182]

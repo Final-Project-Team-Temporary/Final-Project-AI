@@ -64,6 +64,14 @@ class Settings(BaseSettings):
     REDIS_KEYWORD_CONSUMER_GROUP: str = "article-keyword-request-processors"
     REDIS_KEYWORD_CONSUMER_NAME: str = "article-keyword-request-worker-1"
 
+    # RAG 설정
+    EMBEDDING_MODEL: str = "models/text-embedding-004"
+    CHROMA_HOST: str = "localhost"
+    CHROMA_PORT: int = 8001
+    CHROMA_COLLECTION_NAME: str = "econoeasy_articles"
+    RAG_TOP_K: int = 5
+    RAG_MIN_SCORE: float = 0.4
+
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),
         env_file_encoding="utf-8",

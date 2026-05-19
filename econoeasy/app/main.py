@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse
 from .core.config import settings
 from .routers import summarize, recommend
 from .routers import quiz, keyword
+from .routers import rag
 from .services.queue.mongodb_client import mongodb_client
 
 
@@ -24,6 +25,7 @@ app.include_router(summarize.router)
 app.include_router(recommend.router)
 app.include_router(quiz.router)
 app.include_router(keyword.router)
+app.include_router(rag.router)
 
 # MongoDB 라이프사이클 이벤트
 @app.on_event("startup")

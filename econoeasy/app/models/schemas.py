@@ -231,7 +231,18 @@ class KeywordStockResponse(BaseModel):
 
 class TermDefineRequest(BaseModel):
     term: str
+    article_content: Optional[str] = None
+
 
 class TermDefineResponse(BaseModel):
     term: str
     definition: str
+
+
+class EnrichedTermDefineResponse(BaseModel):
+    """RAG 기반 용어 설명 응답 (정의 + 기사 맥락 + 최근 동향)."""
+    term: str
+    definition: str
+    article_context: Optional[str] = None
+    recent_trend: Optional[str] = None
+    sources: List[Dict[str, Any]] = []

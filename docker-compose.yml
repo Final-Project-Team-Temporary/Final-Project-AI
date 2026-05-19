@@ -24,11 +24,17 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
+    environment:
+      # 컨테이너 내부에서는 서비스명으로 접근
+      - MONGO_URI=mongodb://mongodb:27017
+      - REDIS_HOST=redis
+      - CHROMA_HOST=chromadb
     ports:
       - "8000:8000"
     depends_on:
       - mongodb
       - redis
+      - chromadb
     restart: unless-stopped
 
   # 백그라운드 워커1 (기사 요약)
@@ -39,6 +45,9 @@ services:
     command: python -m app.services.queue.worker
     env_file:
       - .env
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - REDIS_HOST=redis
     depends_on:
       - mongodb
       - redis
@@ -52,6 +61,9 @@ services:
     command: python -m app.services.recommend_queue.worker
     env_file:
       - .env
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - REDIS_HOST=redis
     depends_on:
       - mongodb
       - redis
@@ -65,10 +77,23 @@ services:
     command: python -m app.services.keyword_queue.worker
     env_file:
       - .env
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - REDIS_HOST=redis
     depends_on:
       - mongodb
       - redis
     restart: unless-stopped
 
+  # 벡터 DB (RAG)
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    restart: unless-stopped
+
 volumes:
   mongodb_data:
+  chroma_data:

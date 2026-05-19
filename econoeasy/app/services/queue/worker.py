@@ -122,17 +122,22 @@ class ArticleProcessWorker:
             logger.info(f"[{record_id}] 기사 처리 완료: articleId={article_id}")
 
         except Exception as e:
+            error_msg = str(e)
             logger.error(f"[{record_id}] 기사 처리 중 오류 발생: {str(e)}")
 
-            # 에러 발생 시 상태를 FAILED로 업데이트
-            try:
-                await mongodb_client.update_summary_status(article_id, "FAILED")
-            except Exception as update_error:
-                logger.error(f"상태 업데이트 실패: {str(update_error)}")
-
-            # 메시지 ACK (재처리 방지)
-            redis_consumer.acknowledge_message(record_id)
-
+            # 영구적 에러 조건 (예: DB에 기사가 없음, 잘못된 포맷 등)
+            if "Not Found" in error_msg or "Parse Error" in error_msg:
+                await mongodb_client.update_summary_status(article_id, "FAILED_PERMANENTLY")
+                # 영구적 에러는 재시도하지 않고 바로 DLQ로 보낸 뒤 ACK 처리 (4단계에서 구현)
+                await self._send_to_dlq(record_id, stream_data, error_msg)
+                redis_consumer.acknowledge_message(record_id)
+                
+            # 일시적 에러 (네트워크 지연, API Rate Limit 등)
+            else:
+                await mongodb_client.update_summary_status(article_id, "RETRYING")
+                # 핵심: 일시적 에러일 경우 ACK를 하지 않습니다! 
+                # ACK를 하지 않으면 Redis의 PEL(Pending Entries List)에 남게 되어 재시도 대상이 됩니다.
+            
             self.error_count += 1
 
     async def process_pending_messages(self):
@@ -153,20 +158,37 @@ class ArticleProcessWorker:
         for pending in pending_messages:
             record_id = pending["id"]
             times_delivered = pending["times_delivered"]
+            idle_time_ms = pending["idle_time"]
 
-            # 3번 이상 실패한 메시지는 건너뛰기
-            if times_delivered >= 3:
-                logger.warning(f"메시지 처리 포기 (3회 이상 실패): {record_id}")
+            # 3단계: 지수 백오프 계산 (예: 1회 실패시 10초, 2회시 20초, 3회시 40초 대기)
+            # times_delivered는 처음 읽을 때 1이므로, (2 ** (times_delivered - 1)) 형태 활용
+            required_idle_time = (2 ** (times_delivered - 1)) * 10000 
+
+            # 아직 백오프 대기 시간이 지나지 않았다면 스킵 (다음 루프에서 다시 확인)
+            if idle_time_ms < required_idle_time:
+                continue
+
+            MAX_RETRIES = 3
+            
+            # 최대 재시도 횟수 초과 시 DLQ로 이동
+            if times_delivered > MAX_RETRIES:
+                logger.warning(f"메시지 처리 최종 실패 (DLQ 이동): {record_id}")
+                
+                # 원본 메시지 데이터를 가져옴 (실제로는 get_message_by_id 등의 구현 필요)
+                message_data = redis_consumer.get_message(record_id) 
+                
+                # DLQ 처리 (새로운 Redis Stream인 'article_summary_dlq'로 발행하거나 DB에 기록)
+                await self._send_to_dlq(record_id, message_data, "최대 재시도 횟수 초과")
+                
+                # DLQ에 안전하게 적재했으므로 원본 큐에서는 ACK 처리하여 제거
                 redis_consumer.acknowledge_message(record_id)
                 continue
 
-            # 메시지 재할당 (1분 이상 유휴 상태인 경우)
-            claimed_message = redis_consumer.claim_message(record_id, min_idle_time=60000)
-
+            # 대기 시간이 지났고 최대 횟수를 넘지 않았다면 재처리(Claim)
+            claimed_message = redis_consumer.claim_message(record_id, min_idle_time=required_idle_time)
             if claimed_message:
-                logger.info(f"Pending 메시지 재처리: {record_id}")
-                # 재처리 로직은 일반 메시지 처리와 동일
-                # (실제로는 XCLAIM으로 가져온 메시지를 파싱해서 처리해야 함)
+                logger.info(f"Pending 메시지 지수 백오프 재처리: {record_id}, 시도 횟수: {times_delivered}")
+                await self._process_message(claimed_message)
 
 
 # 전역 워커 인스턴스
@@ -183,6 +205,21 @@ async def run_worker():
         logger.error(f"워커 실행 중 치명적 오류: {str(e)}")
     finally:
         await article_worker.stop()
+
+async def _send_to_dlq(self, original_record_id, data, reason):
+        dlq_payload = {
+            "original_id": original_record_id,
+            "articleId": data.get("articleId", "unknown"),
+            "failed_at": datetime.utcnow().isoformat(),
+            "reason": reason
+        }
+        # 방법 1: Redis의 다른 Stream(DLQ)에 저장
+        # redis_client.xadd("article_summary_dlq", dlq_payload)
+        
+        # 방법 2: MongoDB의 별도 DLQ 컬렉션에 저장 (추천)
+        await mongodb_client.save_dlq_record(dlq_payload)
+        pass
+
 
 
 if __name__ == "__main__":
